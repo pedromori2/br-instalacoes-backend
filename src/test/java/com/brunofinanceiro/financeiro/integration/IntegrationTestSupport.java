@@ -2,13 +2,7 @@ package com.brunofinanceiro.financeiro.integration;
 
 import com.brunofinanceiro.financeiro.usuario.Usuario;
 import com.brunofinanceiro.financeiro.usuario.UsuarioRepository;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.crypto.MACSigner;
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -16,16 +10,13 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.util.Date;
 import java.util.UUID;
 
 /**
- * Metodos auxiliares comuns aos testes de integracao. Como o login de verdade acontece no
- * Supabase Auth (fora deste backend), autenticar() aqui gera um JWT no mesmo formato HS256 que o
- * NimbusJwtDecoder do perfil "test" confia (ver application-test.yml), com o "sub" apontando para
- * o usuario admin semeado pela migration V2 - sem precisar de rede nem de um projeto Supabase real.
+ * Metodos auxiliares comuns aos testes de integracao. O JWT de teste e assinado e validado pelo
+ * par de chaves de TestSecurityConfig, que substitui o JwtDecoder baseado em JWKS do Supabase
+ * usado em producao - com o "sub" apontando para o usuario admin semeado pela migration V2, sem
+ * precisar de rede nem de um projeto Supabase real.
  */
 public abstract class IntegrationTestSupport {
 
@@ -35,32 +26,13 @@ public abstract class IntegrationTestSupport {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
-    @Value("${supabase.jwt-secret}")
-    private String jwtSecret;
-
     protected String autenticar(TestRestTemplate restTemplate) {
         Usuario admin = usuarioRepository.findByEmail(ADMIN_EMAIL).orElseThrow();
         if (!ADMIN_SUPABASE_USER_ID.equals(admin.getSupabaseUserId())) {
             admin.setSupabaseUserId(ADMIN_SUPABASE_USER_ID);
             usuarioRepository.save(admin);
         }
-        return mintSupabaseJwt(ADMIN_SUPABASE_USER_ID);
-    }
-
-    private String mintSupabaseJwt(UUID subject) {
-        try {
-            JWTClaimsSet claims = new JWTClaimsSet.Builder()
-                    .subject(subject.toString())
-                    .issueTime(Date.from(Instant.now()))
-                    .expirationTime(Date.from(Instant.now().plusSeconds(3600)))
-                    .claim("role", "authenticated")
-                    .build();
-            SignedJWT signedJwt = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claims);
-            signedJwt.sign(new MACSigner(jwtSecret.getBytes(StandardCharsets.UTF_8)));
-            return signedJwt.serialize();
-        } catch (Exception ex) {
-            throw new IllegalStateException("Falha ao gerar JWT de teste no formato Supabase", ex);
-        }
+        return TestSecurityConfig.mintSupabaseJwt(ADMIN_SUPABASE_USER_ID);
     }
 
     protected HttpEntity<Object> autenticado(Object body, String token) {

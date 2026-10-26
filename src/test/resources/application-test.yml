@@ -11,12 +11,11 @@ spring:
     enabled: true
     locations: classpath:db/migration
 
-# Secret usado pelos testes para assinar JWT no formato Supabase (ver IntegrationTestSupport) -
-# o NimbusJwtDecoder deste perfil confia no mesmo valor, entao nao precisa de rede nem de um
-# projeto Supabase real para os testes autenticados passarem.
+# O bean JwtDecoder real (baseado em JWKS) nem chega a ser usado nos testes - o TestSecurityConfig
+# sobrescreve com um decoder que confia num par de chaves gerado so para os testes (ver
+# IntegrationTestSupport), entao nao precisa de rede nem de um projeto Supabase real.
 supabase:
   url: https://test.supabase.co
-  jwt-secret: test-secret-key-not-for-production-use-0123456789-abcdefgh
   service-role-key: test-service-role-key
 
 app:

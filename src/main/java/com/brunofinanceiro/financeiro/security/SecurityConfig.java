@@ -16,8 +16,6 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import javax.crypto.spec.SecretKeySpec;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @Configuration
@@ -31,25 +29,25 @@ public class SecurityConfig {
     @Value("${app.cors.allowed-origins}")
     private String allowedOrigins;
 
-    @Value("${supabase.jwt-secret}")
-    private String supabaseJwtSecret;
+    @Value("${supabase.url}")
+    private String supabaseUrl;
 
     /**
-     * Valida a assinatura (HS256) e a expiracao dos JWT emitidos pelo Supabase Auth, usando o
-     * "JWT Secret" do projeto (Settings -> API -> JWT Settings no painel do Supabase).
+     * Projetos Supabase novos assinam o JWT com uma chave assimetrica propria (Signing Keys), sem
+     * o "JWT Secret" legado (HS256) - por isso a validacao busca a chave publica no endpoint JWKS
+     * do proprio projeto em vez de usar um secret fixo.
      */
     @Bean
     public JwtDecoder jwtDecoder() {
-        SecretKeySpec key = new SecretKeySpec(supabaseJwtSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
-        NimbusJwtDecoder decoder = NimbusJwtDecoder.withSecretKey(key).build();
-        // withSecretKey(...) nao liga validacao de "exp"/"nbf" por padrao (so confere a
-        // assinatura) - sem isso, um token do Supabase ja expirado continuaria sendo aceito.
-        decoder.setJwtValidator(JwtValidators.createDefault());
+        String jwkSetUri = supabaseUrl + "/auth/v1/.well-known/jwks.json";
+        NimbusJwtDecoder decoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
+        String issuer = supabaseUrl + "/auth/v1";
+        decoder.setJwtValidator(JwtValidators.createDefaultWithIssuer(issuer));
         return decoder;
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtDecoder jwtDecoder) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -59,7 +57,7 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt
-                        .decoder(jwtDecoder())
+                        .decoder(jwtDecoder)
                         .jwtAuthenticationConverter(supabaseJwtAuthenticationConverter)
                 ));
 

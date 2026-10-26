@@ -19,9 +19,10 @@ springdoc:
     path: /api-docs
 
 # Autenticacao e feita pelo Supabase Auth (ver Settings -> API no painel do projeto Supabase).
+# A validacao do JWT usa o endpoint JWKS do proprio projeto (${supabase.url}/auth/v1/.well-known/jwks.json),
+# entao nao precisa de um "JWT Secret" configurado aqui.
 supabase:
   url: ${SUPABASE_URL:}
-  jwt-secret: ${SUPABASE_JWT_SECRET:replace-with-your-supabase-jwt-secret}
   service-role-key: ${SUPABASE_SERVICE_ROLE_KEY:}
 
 app:
