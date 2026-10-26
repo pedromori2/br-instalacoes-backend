@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: financeiro-backend
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  jackson:
+    date-format: yyyy-MM-dd
+    default-property-inclusion: non_null
+  jpa:
+    open-in-view: true
+
+server:
+  port: ${SERVER_PORT:8080}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /api-docs
+
+# Autenticacao e feita pelo Supabase Auth (ver Settings -> API no painel do projeto Supabase).
+supabase:
+  url: ${SUPABASE_URL:}
+  jwt-secret: ${SUPABASE_JWT_SECRET:replace-with-your-supabase-jwt-secret}
+  service-role-key: ${SUPABASE_SERVICE_ROLE_KEY:}
+
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}

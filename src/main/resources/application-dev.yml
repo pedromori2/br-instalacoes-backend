@@ -1,0 +1,21 @@
+spring:
+  # Aponta por padrao para o Postgres do Supabase (Settings -> Database no painel do projeto -
+  # use a "Connection string" no formato sessao/direta, nao a do pooler/pgbouncer, para o Flyway
+  # funcionar sem surpresas). O banco padrao de todo projeto Supabase se chama "postgres".
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:postgres}?sslmode=${DB_SSLMODE:require}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+logging:
+  level:
+    com.brunofinanceiro: DEBUG
