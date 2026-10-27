@@ -10,7 +10,8 @@ spring:
     open-in-view: true
 
 server:
-  port: ${SERVER_PORT:8080}
+  # Cloud Run injeta a variavel PORT; SERVER_PORT continua valendo em outros hosts.
+  port: ${PORT:${SERVER_PORT:8080}}
 
 springdoc:
   swagger-ui:

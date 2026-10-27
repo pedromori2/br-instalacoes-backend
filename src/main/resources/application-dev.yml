@@ -15,6 +15,12 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+    # O Supabase instala algumas extensions/funcoes padrao dentro do schema "public" por conta
+    # propria - o Flyway ve isso como "schema nao vazio" num banco novo e se recusa a migrar sem
+    # uma tabela de historico. baseline-version=0 diz pra ele tratar o estado atual como "nada
+    # migrado ainda" e rodar todas as migrations (V1+) normalmente, sem pular nenhuma.
+    baseline-on-migrate: true
+    baseline-version: 0
 
 logging:
   level:

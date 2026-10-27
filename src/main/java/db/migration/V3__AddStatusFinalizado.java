@@ -18,9 +18,11 @@ import java.util.List;
  * vez de supor um nome fixo.
  * <p>
  * O filtro tambem exige que a clausula do constraint mencione a coluna "status": a partir
- * do Postgres 17, restricoes NOT NULL (como a da coluna "id", chave primaria) tambem
- * aparecem em information_schema.table_constraints com constraint_type = 'CHECK', e sem
- * esse filtro extra a migration tentava derrubar a NOT NULL do "id" junto.
+ * do Postgres 17, restricoes NOT NULL (inclusive a da propria coluna "status") tambem
+ * aparecem em information_schema.table_constraints com constraint_type = 'CHECK' - e como a
+ * clausula dessas e so "status IS NOT NULL", o filtro por "STATUS" tambem batia nelas. Por
+ * isso o filtro extra por nome: essas restricoes automaticas sempre terminam em "_not_null"
+ * (ex.: "2200_17669_5_not_null" - um nome que nem e um identificador SQL valido sem aspas).
  */
 public class V3__AddStatusFinalizado extends BaseJavaMigration {
 
@@ -37,7 +39,8 @@ public class V3__AddStatusFinalizado extends BaseJavaMigration {
                              "  ON tc.constraint_name = cc.constraint_name " +
                              "WHERE UPPER(tc.table_name) = 'ORCAMENTOS' " +
                              "  AND UPPER(tc.constraint_type) = 'CHECK' " +
-                             "  AND UPPER(cc.check_clause) LIKE '%STATUS%'")) {
+                             "  AND UPPER(cc.check_clause) LIKE '%STATUS%' " +
+                             "  AND tc.constraint_name NOT LIKE '%not_null'")) {
             while (rs.next()) {
                 constraintNames.add(rs.getString(1));
             }
