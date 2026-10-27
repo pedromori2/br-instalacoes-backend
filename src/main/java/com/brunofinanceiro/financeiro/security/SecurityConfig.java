@@ -8,6 +8,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
@@ -35,12 +36,16 @@ public class SecurityConfig {
     /**
      * Projetos Supabase novos assinam o JWT com uma chave assimetrica propria (Signing Keys), sem
      * o "JWT Secret" legado (HS256) - por isso a validacao busca a chave publica no endpoint JWKS
-     * do proprio projeto em vez de usar um secret fixo.
+     * do proprio projeto em vez de usar um secret fixo. O Supabase assina com ES256 (EC), mas o
+     * builder do NimbusJwtDecoder so aceita RS256 por padrao - sem declarar o algoritmo esperado,
+     * ele rejeita o token mesmo achando a chave certa pelo "kid" ("another algorithm expected").
      */
     @Bean
     public JwtDecoder jwtDecoder() {
         String jwkSetUri = supabaseUrl + "/auth/v1/.well-known/jwks.json";
-        NimbusJwtDecoder decoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
+        NimbusJwtDecoder decoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri)
+                .jwsAlgorithm(SignatureAlgorithm.ES256)
+                .build();
         String issuer = supabaseUrl + "/auth/v1";
         decoder.setJwtValidator(JwtValidators.createDefaultWithIssuer(issuer));
         return decoder;
